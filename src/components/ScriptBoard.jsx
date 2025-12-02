@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Play, Pause, BookOpen, Atom, Zap, Layout, Video, Mic, Plus, Trash2, ChevronUp, ChevronDown, Save, MonitorPlay } from 'lucide-react';
 
+const SHOT_TYPES = ["Establishing Shot (ES)", "Extreme Long Shot (ELS)", "Long Shot (LS)", "Full Shot (FS)", "Medium Long Shot (MLS)", "Cowboy Shot (CS)", "Medium Shot (MS)", "Medium Close Up (MCU)", "Close Up (CU)", "Extreme Close Up (ECU)"];
+const FRAMING = ["Single Shot", "Two Shot", "Three Shot", "Four Shot", "Five Shot", "Crowd Shot", "Insert Shot", "Over the Shoulder", "Point of View"];
+const LIGHTING = ["Natural", "Soft Key", "High Contrast", "Silhouette", "Neon / Practical", "Dark / Moody"];
+const MOVEMENTS = ["Static", "Handheld", "Dolly In", "Dolly Out", "Pan", "Tilt", "Tracking"];
+
 const ScriptBoard = () => {
     const [activeId, setActiveId] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -12,8 +17,14 @@ const ScriptBoard = () => {
             id: 0,
             title: "The Hook",
             time: "0:00 - 0:10",
-            theme: "science",
             reference: "Astro Kobi",
+            tags: ["Science", "Mystery", "Intro"],
+            cinematography: {
+                shotType: "Close Up (CU)",
+                framing: "Single Shot",
+                lighting: "Dark / Moody",
+                movement: "Static"
+            },
             audio: {
                 speaker: "Narrator",
                 text: "13.8 billion years ago, everything we know—every star, every atom—was compressed into a single point smaller than a proton."
@@ -29,8 +40,14 @@ const ScriptBoard = () => {
             id: 1,
             title: "The Scientific Thesis",
             time: "0:10 - 0:25",
-            theme: "science",
             reference: "Johnny Harris",
+            tags: ["Investigative", "Data", "3D"],
+            cinematography: {
+                shotType: "Extreme Long Shot (ELS)",
+                framing: "Top Down", // Kept as custom for now or map to closest? Let's use Insert Shot or similar if strictly following list, but for now I'll stick to the list provided or keep existing if it matches. Wait, "Top Down" is not in new FRAMING list. I will use "Insert Shot" as a placeholder or just keep "Top Down" if the user allows custom. The user said "Angle we will change to FRAMING... that will be...". I should probably stick to the list. Let's use "Insert Shot" for the map overlay.
+                lighting: "High Contrast",
+                movement: "Dolly Out"
+            },
             audio: {
                 speaker: "Narrator",
                 text: "Science calls it the Singularity. A state of infinite density. But look at the data. This wasn't an explosion IN space. It was an explosion OF space."
@@ -46,8 +63,14 @@ const ScriptBoard = () => {
             id: 2,
             title: "The Spiritual Synthesis",
             time: "0:25 - 0:45",
-            theme: "spiritual",
             reference: "Magnates Media",
+            tags: ["Spiritual", "Epic", "Gold"],
+            cinematography: {
+                shotType: "Long Shot (LS)",
+                framing: "Single Shot",
+                lighting: "Soft Key",
+                movement: "Pan"
+            },
             audio: {
                 speaker: "Narrator (Deep)",
                 text: "Genesis 1:3 doesn't say God built the universe brick by brick. It says He SPOKE. 'Let. There. Be. Light.'"
@@ -81,8 +104,14 @@ const ScriptBoard = () => {
             id: newId,
             title: "New Scene",
             time: "0:00 - 0:00",
-            theme: "science",
             reference: "Reference Style",
+            tags: [],
+            cinematography: {
+                shotType: "Medium Shot (MS)",
+                framing: "Single Shot",
+                lighting: "Natural",
+                movement: "Static"
+            },
             audio: { speaker: "Speaker", text: "Enter script here..." },
             visual: { action: "Visual Action", mood: "Mood", elements: "Key Elements", description: "Describe the shot..." }
         };
@@ -111,15 +140,21 @@ const ScriptBoard = () => {
         }
     };
 
-    // UI HELPERS
-    const getThemeColor = (theme) => {
-        switch (theme) {
-            case 'science': return 'border-blue-500 text-blue-400 bg-blue-500/10';
-            case 'spiritual': return 'border-amber-500 text-amber-400 bg-amber-500/10';
-            case 'hybrid': return 'border-purple-500 text-purple-400 bg-purple-500/10';
-            default: return 'border-slate-500 text-slate-400 bg-slate-500/10';
+    const addTag = (e) => {
+        if (e.key === 'Enter' && e.target.value.trim()) {
+            const newTags = [...(currentScene.tags || []), e.target.value.trim()];
+            updateField('root', 'tags', newTags);
+            e.target.value = '';
         }
     };
+
+    const removeTag = (tagToRemove) => {
+        const newTags = currentScene.tags.filter(tag => tag !== tagToRemove);
+        updateField('root', 'tags', newTags);
+    };
+
+    // UI HELPERS
+
 
     return (
         <div className="min-h-screen bg-[#0a0a0c] text-slate-200 font-sans flex flex-col h-screen overflow-hidden">
@@ -167,8 +202,8 @@ const ScriptBoard = () => {
                                 key={segment.id}
                                 onClick={() => setActiveId(segment.id)}
                                 className={`w-full text-left p-3 rounded-xl border cursor-pointer transition-all duration-200 group relative ${activeId === segment.id
-                                        ? `${getThemeColor(segment.theme)} border-opacity-100 shadow-lg bg-opacity-20`
-                                        : 'border-slate-800 bg-[#161618] hover:border-slate-700 hover:bg-[#1c1c1f]'
+                                    ? 'border-blue-500/50 border-opacity-100 shadow-lg bg-blue-500/5'
+                                    : 'border-slate-800 bg-[#161618] hover:border-slate-700 hover:bg-[#1c1c1f]'
                                     }`}
                             >
                                 <div className="flex justify-between items-start mb-1">
@@ -191,10 +226,17 @@ const ScriptBoard = () => {
 
                                 {/* Active Indicator Line */}
                                 {activeId === segment.id && (
-                                    <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${segment.theme === 'science' ? 'bg-blue-500' :
-                                            segment.theme === 'spiritual' ? 'bg-amber-500' : 'bg-purple-500'
-                                        }`}></div>
+                                    <div className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-blue-500"></div>
                                 )}
+
+                                {/* Metadata Badges */}
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                    <span className="text-[9px] px-1 rounded border border-slate-700 text-slate-400 bg-black/20">{segment.cinematography?.shotType}</span>
+                                    {segment.tags?.slice(0, 2).map((tag, i) => (
+                                        <span key={i} className="text-[9px] px-1 rounded border border-slate-700 text-slate-500 bg-black/20">{tag}</span>
+                                    ))}
+                                </div>
+
                             </div>
                         ))}
 
@@ -207,29 +249,53 @@ const ScriptBoard = () => {
                 {/* MIDDLE: EDITOR & PREVIEW (SCROLLABLE) */}
                 <div className="flex-grow flex flex-col overflow-y-auto bg-[#0a0a0c] p-8">
 
-                    {/* CONTROL BAR */}
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => moveSegment('up')} disabled={activeSegmentIndex === 0} className="p-2 border border-slate-800 rounded-lg hover:bg-slate-800 disabled:opacity-30">
-                                <ChevronUp className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => moveSegment('down')} disabled={activeSegmentIndex === segments.length - 1} className="p-2 border border-slate-800 rounded-lg hover:bg-slate-800 disabled:opacity-30">
-                                <ChevronDown className="w-4 h-4" />
-                            </button>
+                    {/* CONTROL BAR: CINEMATOGRAPHY & TAGS */}
+                    <div className="flex flex-col gap-4 mb-6 bg-[#0f0f11] p-4 rounded-xl border border-slate-800">
+
+                        {/* Top Row: Navigation & Tags */}
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => moveSegment('up')} disabled={activeSegmentIndex === 0} className="p-2 border border-slate-800 rounded-lg hover:bg-slate-800 disabled:opacity-30">
+                                    <ChevronUp className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => moveSegment('down')} disabled={activeSegmentIndex === segments.length - 1} className="p-2 border border-slate-800 rounded-lg hover:bg-slate-800 disabled:opacity-30">
+                                    <ChevronDown className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="flex-grow ml-4 flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+                                {currentScene.tags?.map((tag, idx) => (
+                                    <span key={idx} className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-[10px] text-slate-300 border border-slate-700 whitespace-nowrap">
+                                        {tag}
+                                        <button onClick={() => removeTag(tag)} className="hover:text-white"><Trash2 className="w-3 h-3" /></button>
+                                    </span>
+                                ))}
+                                <input
+                                    placeholder="+ Tag"
+                                    onKeyDown={addTag}
+                                    className="bg-transparent border border-slate-800 rounded px-2 py-1 text-xs w-20 focus:w-32 transition-all focus:border-blue-500 outline-none"
+                                />
+                            </div>
                         </div>
 
-                        <div className="flex gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800">
-                            {['science', 'spiritual', 'hybrid'].map(theme => (
-                                <button
-                                    key={theme}
-                                    onClick={() => updateField('root', 'theme', theme)}
-                                    className={`px-3 py-1 rounded text-xs font-medium capitalize transition-all ${currentScene.theme === theme
-                                            ? (theme === 'science' ? 'bg-blue-600 text-white' : theme === 'spiritual' ? 'bg-amber-600 text-white' : 'bg-purple-600 text-white')
-                                            : 'text-slate-400 hover:text-white'
-                                        }`}
-                                >
-                                    {theme}
-                                </button>
+                        {/* Bottom Row: Cinematography Dropdowns */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {[
+                                { label: 'Shot Type', field: 'shotType', options: SHOT_TYPES },
+                                { label: 'Angle', field: 'angle', options: ANGLES },
+                                { label: 'Lighting', field: 'lighting', options: LIGHTING },
+                                { label: 'Movement', field: 'movement', options: MOVEMENTS },
+                            ].map((ctrl) => (
+                                <div key={ctrl.field}>
+                                    <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">{ctrl.label}</label>
+                                    <select
+                                        value={currentScene.cinematography?.[ctrl.field]}
+                                        onChange={(e) => updateField('cinematography', ctrl.field, e.target.value)}
+                                        className="w-full bg-[#161618] border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-300 focus:border-blue-500 outline-none appearance-none"
+                                    >
+                                        {ctrl.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    </select>
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -239,7 +305,7 @@ const ScriptBoard = () => {
                         {/* Overlay UI */}
                         <div className="absolute inset-0 p-6 flex flex-col justify-between z-10">
                             <div className="flex justify-between items-start">
-                                <div className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wider border bg-black/80 backdrop-blur-md ${getThemeColor(currentScene.theme)}`}>
+                                <div className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wider border bg-black/80 backdrop-blur-md border-slate-600 text-slate-300`}>
                                     {currentScene.reference}
                                 </div>
                                 <div className="text-xs font-mono text-white bg-black/50 px-2 py-1 rounded border border-white/10">{currentScene.time}</div>
@@ -265,10 +331,7 @@ const ScriptBoard = () => {
                         </div>
 
                         {/* Background Atmosphere */}
-                        <div className={`absolute inset-0 opacity-40 transition-all duration-700 ${currentScene.theme === 'science' ? 'bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900 via-slate-900 to-black' :
-                                currentScene.theme === 'spiritual' ? 'bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-700 via-slate-900 to-black' :
-                                    'bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-purple-800 via-slate-900 to-black'
-                            }`}></div>
+                        <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black"></div>
                     </div>
 
                     {/* EDITING FORMS */}
